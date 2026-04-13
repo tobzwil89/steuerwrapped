@@ -3,6 +3,39 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
+// ─── TYPE DEFINITIONS ─────────────────────────────────────────────
+interface TaxInput {
+  brutto: number;
+  steuerklasse: string;
+  kinder: number;
+  kirchensteuer: boolean;
+  bundesland: string;
+}
+
+interface TaxResult {
+  einkommensteuer: number;
+  soli: number;
+  kirchensteuer: number;
+  rentenversicherung: number;
+  krankenversicherung: number;
+  pflegeversicherung: number;
+  arbeitslosenversicherung: number;
+  gesamtSteuern: number;
+  gesamtSozial: number;
+  gesamtAbgaben: number;
+  nettoJahreseinkommen: number;
+  abgabenquote: number;
+}
+
+interface BudgetKategorie {
+  name: string;
+  betrag: number;
+  prozent: number;
+  icon: string;
+  farbe: string;
+  deinAnteil?: number;
+}
+
 // ─── TAX CALCULATOR ───────────────────────────────────────────────
 const SOCIAL_INSURANCE = {
   rente: { rate: 0.093, bbg: 96600 },
@@ -11,7 +44,7 @@ const SOCIAL_INSURANCE = {
   arbeit: { rate: 0.013, bbg: 96600 },
 };
 
-function calculateIncomeTax(zvE) {
+function calculateIncomeTax(zvE: number): number {
   if (zvE <= 0) return 0;
   if (zvE <= 12348) return 0;
   if (zvE <= 17005) {
@@ -29,7 +62,7 @@ function calculateIncomeTax(zvE) {
   return Math.round(0.45 * zvE - 19112.01);
 }
 
-function calculateTax(input) {
+function calculateTax(input: TaxInput): TaxResult {
   const { brutto, steuerklasse, kinder, kirchensteuer, bundesland } = input;
   let zvE = brutto;
   if (steuerklasse === "II") zvE -= 4260;
@@ -106,7 +139,7 @@ const BUNDESHAUSHALT = {
   ],
 };
 
-function calculateBudgetShare(einkommensteuer) {
+function calculateBudgetShare(einkommensteuer: number): BudgetKategorie[] {
   const totalEinkommensteuerRevenue = 190_000_000_000;
   const anteil = einkommensteuer / totalEinkommensteuerRevenue;
   return BUNDESHAUSHALT.kategorien.map((k) => ({
@@ -116,31 +149,31 @@ function calculateBudgetShare(einkommensteuer) {
 }
 
 // ─── SHARE UTILS ──────────────────────────────────────────────────
-function generateShareText(r) {
+function generateShareText(r: TaxResult): string {
   return `Mein #SteuerWrapped 2026:\n💰 ${fmt(r.gesamtAbgaben)} Abgaben (${r.abgabenquote.toFixed(1)}%)\n🏛️ ${fmt(r.einkommensteuer)} Einkommensteuer\n👴 ${fmt(r.rentenversicherung)} Rente\n🏥 ${fmt(r.krankenversicherung)} Krankenversicherung\n\nBerechne deins: steuerwrapped.de`;
 }
 
-function shareOnX(text) {
+function shareOnX(text: string): void {
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
 }
 
-function shareOnWhatsApp(text) {
+function shareOnWhatsApp(text: string): void {
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────
-function fmt(n) {
+function fmt(n: number): string {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 }
 
-function fmtCompact(n) {
+function fmtCompact(n: number): string {
   if (n >= 1e9) return `${(n / 1e9).toFixed(1)} Mrd. €`;
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)} Mio. €`;
   return fmt(n);
 }
 
 // ─── ANIMATED NUMBER ──────────────────────────────────────────────
-function AnimatedNumber({ value, duration = 1200, prefix = "", suffix = "", className = "" }) {
+function AnimatedNumber({ value, duration = 1200, prefix = "", suffix = "", className = "" }: { value: number; duration?: number; prefix?: string; suffix?: string; className?: string }) {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
     let start = 0;
